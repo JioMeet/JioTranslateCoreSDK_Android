@@ -1,7 +1,7 @@
 
 # JioTranslate
 
-JioTranslate is a package that provides functionality for translating text and speech between different languages. It offers features like image to text conversion, text translation, text to speech, and more.
+JioTranslate is a package that provides functionality for translating text and speech between different languages. It offers features like text translation, text to speech, and more.
 
 ## Installation
 
