@@ -30,14 +30,6 @@ TranslationManager is an interface that provides methods for managing translatio
     
     ```
 
-    `stopRecording`: Stops recording audio.
-    ```
-    fun stopRecording(
-        onTextTranslationState: (TextTranslationState) -> Unit,
-        isLiveTranslation: Boolean = false,
-        platform: String
-    )
-    ```
     
     `translateText`: Translates input text from one language to another.
     ```
