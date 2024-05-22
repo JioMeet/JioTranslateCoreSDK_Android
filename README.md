@@ -1,4 +1,4 @@
-# JioTranslateCoreSDK_iOS
+# JioTranslateCoreSDK_Android
 JioTranslate is a package that provides functionality for translating text and speech between different languages. It offers features like text translation, text to speech, and speech to text.
 
 # JioTranslate CoreSDK Quickstart
@@ -180,4 +180,4 @@ suspend fun startTextToSpeech(
 
 ## Troubleshooting
 
-Facing any issues while integrating or installing the JioTranalte android CoreSDK kit, please connect with us via real time support present in JioTranslate.AppSupport@jio.com or https://translate.jio/contact-us.html
+Facing any issues while integrating or installing the JioTranslate android CoreSDK kit, please connect with us via real time support present in JioTranslate.AppSupport@jio.com or https://translate.jio/contact-us.html
