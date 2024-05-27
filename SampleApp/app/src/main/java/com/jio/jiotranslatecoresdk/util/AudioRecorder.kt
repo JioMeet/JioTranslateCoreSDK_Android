@@ -1,4 +1,4 @@
-package com.jio.jiotranslatecoresdk
+package com.jio.jiotranslatecoresdk.util
 
 import android.annotation.SuppressLint
 import android.content.Context

@@ -1,4 +1,4 @@
-package com.jio.jiotranslatecoresdk.ui.theme
+package com.jio.jiotranslatecoresdk.util
 
 import android.net.Uri
 import androidx.annotation.OptIn
@@ -57,6 +57,19 @@ object AudioPlayerManager {
                 onStopPlayingCallback?.invoke(Unit)
             }
         }
+    }
+
+    fun pausePlayback() {
+        exoPlayer?.pause()
+    }
+
+    fun resumePlayback() {
+        exoPlayer?.play()
+    }
+
+    fun replay() {
+        exoPlayer?.seekTo(0)
+        exoPlayer?.play()
     }
 
     fun stopPlayback() {

@@ -1,4 +1,4 @@
-package com.jio.jiotranslatecoresdk
+package com.jio.jiotranslatecoresdk.util
 
 import android.content.Context
 import android.os.Environment

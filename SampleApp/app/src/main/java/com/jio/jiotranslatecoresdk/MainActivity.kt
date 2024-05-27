@@ -12,7 +12,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -44,16 +44,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
 import com.jio.jiotranslate.model.SupportedLanguage
 import com.jio.jiotranslate.model.TranslateEngineType
 import com.jio.jiotranslatecoresdk.ui.theme.MyApplicationTheme
+import com.jio.jiotranslatecoresdk.util.AudioPlayerManager
+import com.jio.jiotranslatecoresdk.util.AudioRecorder
+import com.jio.jiotranslatecoresdk.util.ComposableLifecycle
 
 
 class MainActivity : ComponentActivity() {
 
     private val viewModel : MainViewModel by viewModels { MainViewModel.Factory }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -74,20 +77,34 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+            ComposableLifecycle(onDispose = {
+            }, onEvent = { _, event ->
+                when (event) {
+                    //handle app background case
+                    Lifecycle.Event.ON_PAUSE -> {
+                        AudioPlayerManager.stopPlayback()
+                        viewModel.updateMediaPlayerState(false)
+                    }
+
+                    else -> {}
+                }
+            })
+
             LaunchedEffect(Unit) {
-                val allPermissionsGranted : Boolean = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) { // Below Android 13
-                    permissions.all {
+                val allPermissionsGranted : Boolean =
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) { // Below Android 13
+                        permissions.all {
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                it
+                            ) == PackageManager.PERMISSION_GRANTED
+                        }
+                    } else {
                         ContextCompat.checkSelfPermission(
                             context,
-                            it
+                            android.Manifest.permission.RECORD_AUDIO,
                         ) == PackageManager.PERMISSION_GRANTED
                     }
-                } else {
-                    ContextCompat.checkSelfPermission(
-                        context,
-                        android.Manifest.permission.RECORD_AUDIO,
-                    ) == PackageManager.PERMISSION_GRANTED
-                }
                 if (!allPermissionsGranted) {
                     requestPermissionLauncher.launch(permissions)
                 }
@@ -101,7 +118,7 @@ class MainActivity : ComponentActivity() {
                 val supportedLanguages by viewModel.listOfLanguages.collectAsState()
                 val selectedInputLanguage by viewModel.selectedInputLanguage.collectAsState()
                 val selectedOutputLanguage by viewModel.selectedOutputLanguage.collectAsState()
-
+                val isPlaying by viewModel.isMediaPlayerPlaying.collectAsState()
                 MainScreen(
                     textState = textState,
                     resultState = resultState,
@@ -109,8 +126,8 @@ class MainActivity : ComponentActivity() {
                         viewModel.updateText(it)
                     },
                     onTextTranslate = {
-                        if(textState.isEmpty()){
-                            showToast(context,"Please Enter text to speak in input box")
+                        if (textState.isEmpty()) {
+                            showToast(context, "Please Enter text to speak in input box")
                             return@MainScreen
                         }
                         viewModel.textTranslate(
@@ -121,10 +138,11 @@ class MainActivity : ComponentActivity() {
                         )
                     },
                     onStartSynthesis = {
-                        if(textState.isEmpty()){
-                            showToast(context,"Please Enter text to speak in input box")
+                        if (textState.isEmpty()) {
+                            showToast(context, "Please Enter text to speak in input box")
                             return@MainScreen
                         }
+                        viewModel.updateMediaPlayerState(!isPlaying)
                         viewModel.synthesisToSpeaker(
                             text = textState,
                             isFemale = false,
@@ -133,26 +151,27 @@ class MainActivity : ComponentActivity() {
                         )
                     },
                     speechToText = {
-                        val allPermissionsGranted : Boolean = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) { // Below Android 13
-                            permissions.all {
+                        val allPermissionsGranted : Boolean =
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) { // Below Android 13
+                                permissions.all {
+                                    ContextCompat.checkSelfPermission(
+                                        context,
+                                        it
+                                    ) == PackageManager.PERMISSION_GRANTED
+                                }
+                            } else {
                                 ContextCompat.checkSelfPermission(
                                     context,
-                                    it
+                                    android.Manifest.permission.RECORD_AUDIO,
                                 ) == PackageManager.PERMISSION_GRANTED
                             }
-                        } else {
-                            ContextCompat.checkSelfPermission(
-                                context,
-                                android.Manifest.permission.RECORD_AUDIO,
-                            ) == PackageManager.PERMISSION_GRANTED
-                        }
                         if (allPermissionsGranted) {
                             if (isRecording) {
                                 audioRecorder.stopRecording()
                                 viewModel.speechToText(
                                     filePath = audioRecorder.wavFilePath,
                                     inputLanguage = selectedInputLanguage,
-                                    translationEngine =  TranslateEngineType.TRANSLATE_ENGINE_1
+                                    translationEngine = TranslateEngineType.TRANSLATE_ENGINE_1
                                 )
                             } else {
                                 audioRecorder.startRecording()
@@ -162,12 +181,16 @@ class MainActivity : ComponentActivity() {
                             requestPermissionLauncher.launch(permissions)
                         }
                     },
-                    speechToTextTitle = if (isRecording) "Stop Recording" else "Start Recording",
+                    speechToTextTitle = if (isRecording) "Stop Speech To Text" else "Start Speech To Text",
                     listSupportedLanguages = supportedLanguages,
                     updateInputLang = { viewModel.updateInputLang(it) },
                     updateOutputLang = { viewModel.updateOutputLang(it) },
                     selectedInputLanguage = selectedInputLanguage,
-                    selectedOutputLanguage = selectedOutputLanguage
+                    selectedOutputLanguage = selectedOutputLanguage,
+                    isPlaying = isPlaying,
+                    updateAudioPlayerState = {
+                        viewModel.updateMediaPlayerState(false)
+                    }
                 )
             }
         }
@@ -186,8 +209,10 @@ fun MainScreen(
     listSupportedLanguages : List<SupportedLanguage>?,
     updateInputLang : (SupportedLanguage) -> Unit,
     updateOutputLang : (SupportedLanguage) -> Unit,
-    selectedInputLanguage: SupportedLanguage,
-    selectedOutputLanguage: SupportedLanguage
+    selectedInputLanguage : SupportedLanguage,
+    selectedOutputLanguage : SupportedLanguage,
+    isPlaying: Boolean,
+    updateAudioPlayerState: (Boolean) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -200,13 +225,21 @@ fun MainScreen(
         Spacer(modifier = Modifier.height(16.dp))
         TextViewBelowTextField(resultState)
         Spacer(modifier = Modifier.height(24.dp))
-        HorizontalDropdowns(listSupportedLanguages, updateInputLang, updateOutputLang,selectedInputLanguage,selectedOutputLanguage)
+        HorizontalDropdowns(
+            listSupportedLanguages,
+            updateInputLang,
+            updateOutputLang,
+            selectedInputLanguage,
+            selectedOutputLanguage
+        )
         Spacer(modifier = Modifier.height(16.dp))
         FullWidthVerticalButtons(
             onTextTranslate,
             onStartSynthesis,
             speechToText,
-            speechToTextTitle
+            speechToTextTitle,
+            isPlaying = isPlaying,
+            updateAudioPlayerState = updateAudioPlayerState
         )
     }
 }
@@ -257,7 +290,13 @@ fun HorizontalDropdowns(
                 color = Color.Black,
                 fontSize = 12.sp,
             )
-            DropdownMenuSample(listSupportedLanguages, updateInputLang, true, selectedInputLanguage,selectedOutputLanguage)
+            DropdownMenuSample(
+                listSupportedLanguages,
+                updateInputLang,
+                true,
+                selectedInputLanguage,
+                selectedOutputLanguage
+            )
         }
         Column {
             Text(
@@ -265,7 +304,13 @@ fun HorizontalDropdowns(
                 color = Color.Black,
                 fontSize = 12.sp,
             )
-            DropdownMenuSample(listSupportedLanguages, updateOutputLang,false, selectedInputLanguage, selectedOutputLanguage)
+            DropdownMenuSample(
+                listSupportedLanguages,
+                updateOutputLang,
+                false,
+                selectedInputLanguage,
+                selectedOutputLanguage
+            )
         }
 
     }
@@ -275,7 +320,7 @@ fun HorizontalDropdowns(
 fun DropdownMenuSample(
     listSupportedLanguages : List<SupportedLanguage>?,
     updateLang : (SupportedLanguage) -> Unit,
-    isInput: Boolean,
+    isInput : Boolean,
     selectedInputLanguage : SupportedLanguage,
     selectedOutputLanguage : SupportedLanguage
 ) {
@@ -283,7 +328,7 @@ fun DropdownMenuSample(
 //
     Box(modifier = Modifier.wrapContentSize()) {
         Button(onClick = { expanded = true }) {
-            if(isInput) {
+            if (isInput) {
                 Text(selectedInputLanguage.languageName)
             } else {
                 Text(selectedOutputLanguage.languageName)
@@ -310,16 +355,28 @@ fun FullWidthVerticalButtons(
     onTextTranslate : () -> Unit,
     onStartSynthesis : () -> Unit,
     speechToText : () -> Unit,
-    speechToTextTitle : String
+    speechToTextTitle : String,
+    isPlaying : Boolean,
+    updateAudioPlayerState:(Boolean) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Button(onClick = { onTextTranslate() }, modifier = Modifier.fillMaxWidth()) {
             Text("Translate Text")
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = { onStartSynthesis() }, modifier = Modifier.fillMaxWidth()) {
-            Text("Synthesis To Speaker")
+        Button(onClick = {
+            if (isPlaying) {
+                AudioPlayerManager.stopPlayback()
+                updateAudioPlayerState(false)
+            } else onStartSynthesis()
+        }, modifier = Modifier.fillMaxWidth()) {
+           if(!isPlaying) Text("Start Text To Speech")  else Text("Stop Text to Speech")
         }
+
+        AudioControlRow(
+            onPauseClick = { AudioPlayerManager.pausePlayback() },
+            onReplayClick = { AudioPlayerManager.replay() },
+            onResumeClick = { AudioPlayerManager.resumePlayback() })
         Spacer(modifier = Modifier.height(8.dp))
         Button(onClick = { speechToText() }, modifier = Modifier.fillMaxWidth()) {
             Text(speechToTextTitle)
@@ -327,6 +384,28 @@ fun FullWidthVerticalButtons(
     }
 }
 
-fun showToast(context: Context, message: String) {
+@Composable
+fun AudioControlRow(
+    onPauseClick : () -> Unit,
+    onReplayClick : () -> Unit,
+    onResumeClick : () -> Unit,
+) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Spacer(modifier = Modifier.width(8.dp))
+        Button(onClick = onPauseClick) {
+            Text("Pause")
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Button(onClick = onReplayClick) {
+            Text("Replay")
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Button(onClick = onResumeClick) {
+            Text("Resume")
+        }
+    }
+}
+
+fun showToast(context : Context, message : String) {
     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
 }

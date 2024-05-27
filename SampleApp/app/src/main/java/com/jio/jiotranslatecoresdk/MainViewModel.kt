@@ -3,7 +3,6 @@ package com.jio.jiotranslatecoresdk
 import android.content.Context
 import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -15,7 +14,7 @@ import com.jio.jiotranslate.model.Gender
 import com.jio.jiotranslate.model.Server
 import com.jio.jiotranslate.model.SupportedLanguage
 import com.jio.jiotranslate.model.TranslateEngineType
-import com.jio.jiotranslatecoresdk.ui.theme.AudioPlayerManager
+import com.jio.jiotranslatecoresdk.util.AudioPlayerManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -40,6 +39,8 @@ class MainViewModel : ViewModel() {
     private val _selectedOutputLanguage = MutableStateFlow<SupportedLanguage>(SupportedLanguage.Hindi)
     val selectedOutputLanguage = _selectedOutputLanguage.asStateFlow()
 
+    private val _isMediaPlayerPlaying = MutableStateFlow<Boolean>(false)
+    val isMediaPlayerPlaying = _isMediaPlayerPlaying.asStateFlow()
 
     fun updateInputLang(inputLanguage: SupportedLanguage){
         _selectedInputLanguage.value = inputLanguage
@@ -52,7 +53,7 @@ class MainViewModel : ViewModel() {
     fun initJioTranslate(context: Context) {
         val builder = JioTranslate.Builder()
         val accessToken =
-            "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1LTA4NDM3NGJjLTAxOGQtNGQ3ZS04MTM3LTgzYzNjNTFlY2VhNiIsInRva2VuSWQiOiJvdC1jMjMxOTc4OS0yZWNkLTQ5OGQtYjRlZC1jZTRhYjQ5MzBkNGMiLCJzb3VyY2UiOiJtb2JpbGUiLCJpYXQiOjE3MTYzNjcxNjQsImV4cCI6MTcxNjQ1MzU2NH0.dupQmzfkRhIsyHDc3bhBOD4TF39Wb-pBlzKVYsUM7flZdUTshMAxod4Hzz3P2bFyAe1yRap9ZDV3RcX2m_XVr89yfQgMKS8txCiYLK0a0q-EfzPxT9QKFLYKqaec76YeWxATFiTi1_bVrE4-c5Z2Y4VqZZnFb4W0q1s4uwMTy64"
+            "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1LTBhYmI5ZjJmLTYzNDctNDRhOS04ZGJkLWI2NDE3OWQzMTYzZSIsInRva2VuSWQiOiJvdC00YWE5OTgxNy05Y2QzLTQ3NDYtYTA1My04N2MzYTRlYWM1ZTgiLCJzb3VyY2UiOiJtb2JpbGUiLCJpYXQiOjE3MTY3OTE5MzUsImV4cCI6MTcxNjg3ODMzNX0.WBb82Sz_wDnL6eRr35MngQyGbw9lGaX0JE23AoueUYde3t22oFWWwLW221muOVdufkJNt3rnznsHyeYoAnpoeeOf663udL6rMl53ItyerO0ZF-nis7eQTiRVjBVTcdNmc06fuuUfijfx3qaNIdtDptZyd0xN1vX380sR-Dtsat0"
         builder.apply {
             init(context, Server.SIT.baseURL)
             setJwt(accessToken)
@@ -104,7 +105,6 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     fun synthesisToSpeaker(
         text: String,
         isFemale: Boolean,
@@ -120,10 +120,20 @@ class MainViewModel : ViewModel() {
             ) { result ->
                 when(result){
                     is Completion.Success -> {
-                        AudioPlayerManager.playAudioBytes(
-                            audioBytes = Base64.getDecoder().decode(result.result)  ?: byteArrayOf(),
-                            onStopPlaying = {}
-                        )
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            AudioPlayerManager.playAudioBytes(
+                                audioBytes = Base64.getDecoder().decode(result.result)  ?: byteArrayOf(),
+                                onStopPlaying = {
+                                    updateMediaPlayerState(false)
+                                }
+                            )
+                        } else {
+                            AudioPlayerManager.playAudioBytes(
+                            audioBytes = android.util.Base64.decode(result.result,0)  ?: byteArrayOf(),
+                            onStopPlaying = {
+                                updateMediaPlayerState(false)
+                            })
+                        }
                     }
                     is Completion.Error -> {
                         _result.value = result.errorMessage
@@ -134,6 +144,9 @@ class MainViewModel : ViewModel() {
         }
     }
 
+    fun updateMediaPlayerState(isPlaying: Boolean){
+        _isMediaPlayerPlaying.value = isPlaying
+    }
     fun speechToText(
         filePath: String,
         inputLanguage: SupportedLanguage,
