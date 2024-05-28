@@ -39,7 +39,7 @@ class MainViewModel : ViewModel() {
     private val _selectedOutputLanguage = MutableStateFlow<SupportedLanguage>(SupportedLanguage.Hindi)
     val selectedOutputLanguage = _selectedOutputLanguage.asStateFlow()
 
-    private val _isMediaPlayerPlaying = MutableStateFlow<Boolean>(false)
+    private val _isMediaPlayerPlaying = MutableStateFlow(false)
     val isMediaPlayerPlaying = _isMediaPlayerPlaying.asStateFlow()
 
     fun updateInputLang(inputLanguage: SupportedLanguage){
@@ -87,8 +87,8 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             jioTranslate.startTextTranslate(
                 inputText = text,
-                inputLanguage = inputLanguage,
-                translationLanguage = translationLanguage,
+                inputLanguage = inputLanguage.languageName,
+                translationLanguage = translationLanguage.languageName,
                 translateEngine = translationEngine,
                 isIndirectTranslation = isIndirectTranslation,
             ) { result ->
@@ -113,7 +113,7 @@ class MainViewModel : ViewModel() {
     ) {
         viewModelScope.launch {
             jioTranslate.startTextToSpeech(
-                textSupportedLanguage = language,
+                textSupportedLanguage = language.languageName,
                 inputText = text,
                 gender = if (isFemale) Gender.FEMALE else Gender.MALE ,
                 translateEngine = translationEngine
@@ -155,7 +155,7 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             jioTranslate.startSpeechToText(
                 audioFilePath = filePath,
-                inputLanguage = inputLanguage,
+                inputLanguage = inputLanguage.languageName,
                 translateEngine = translationEngine,
             ) { result ->
                 when (result) {
