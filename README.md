@@ -13,6 +13,7 @@ JioTranslate is a package that provides functionality for translating text and s
    - [Configure SDK](#configure-jiomeet-core-sdk-inside-your-app)
    - [Add Permissions](#add-permissions-for-network-and-device-access)
    - [Integrate SDK](#integrate-sdk)
+   - [Load Config]
    - [Speech to Text Translation](#speech-to-text-translation)
    - [Text to Text Translation](#text-to-text-translation)
    - [Text to Speech Translation](#text-to-speech-translation)
@@ -110,6 +111,20 @@ Create and configure the instance of `JioTranslateManager`.
     
 ```
 
+### Load Configuration
+This method fetches the configuration data required for the SDK to function properly. Upon successful loading, it returns the list of supported languages as a List<SupportedLanguage>. This list serves as the source of truth for the supported languages within the SDK.
+```kotlin
+jioTranslate.loadConfig { result ->
+        when (result) {
+            is Completion.Success -> {
+                _listOfLanguages.value = jioTranslate.getListOfSupportedLanguage()
+            }
+            is Completion.Error -> {
+                Log.e("TAG", "initJioTranslate: " + "Error fetching config")
+            }
+        }
+    }
+```
 
 ### Speech to Text Translation
 
@@ -117,7 +132,7 @@ Use this function to convert spoken language into written text.
 ```kotlin
  fun startSpeechToText(
         audioFilePath : String,
-        inputLanguage : SupportedLanguage,
+        inputLanguage : String,
         translateEngine : TranslateEngineType? = null,
         completion : (Completion<String>) -> Unit,
     ) 
@@ -127,7 +142,7 @@ Use this function to convert spoken language into written text.
 | Property Name | Type  | Description  |
 | ------- | --- | --- |
 | audioFilePath | String | Send recorded audio file path (Ex: recorded.wav) |
-| inputLanguage | SupportedLanguage | Language name of the recorded audio, Ex: 'English', 'Telugu' |
+| inputLanguage | String | Language name of the recorded audio, Ex: 'English', 'Telugu' |
 | translateEngine | TranlsateEngineType | TRANSLATE_ENGINE_1, TRANSLATE_ENGINE_2, TRANSLATE_ENGINE_3 |
 | completion | Completion<T> | The completion result. This is of type Completion, which is a sealed class with two possible types: Success or Error. The Success type holds a result of type T, while the Error type holds an error message as a String. |
 
@@ -138,8 +153,8 @@ Use this function to translate text from one language to another.
 ```kotlin
   suspend fun startTextTranslate(
         inputText : String,
-        inputLanguage : SupportedLanguage,
-        translationLanguage : SupportedLanguage,
+        inputLanguage : String,
+        translationLanguage : String,
         translateEngine :  TranslateEngineType? = null,
         isIndirectTranslation : Boolean = false,
         completion : (Completion<String>) -> Unit,
@@ -149,8 +164,8 @@ Use this function to translate text from one language to another.
 | Property Name | Type  | Description  |
 | ------- | --- | --- |
 | inputText | String | Input text to translate |
-| inputLanguage | SupportedLanguage | Language name of the input text, Ex: 'English', 'Telugu' |
-| translationLanguage | SupportedLanguage | Language name of the output translation text, Ex: 'Hindi', 'Telugu' |
+| inputLanguage | String | Language name of the input text, Ex: 'English', 'Telugu' |
+| translationLanguage | String | Language name of the output translation text, Ex: 'Hindi', 'Telugu' |
 | translateEngine | TranlsateEngineType | TRANSLATE_ENGINE_1, TRANSLATE_ENGINE_2, TRANSLATE_ENGINE_3  |
 | isIndirectTranslation | Bool | true or false |
 | completion | Completion<T> | The completion result. This is of type Completion, which is a sealed class with two possible types: Success or Error. The Success type holds a result of type T, while the Error type holds an error message as a String. |
@@ -165,7 +180,7 @@ suspend fun startTextToSpeech(
         inputText : String,
         gender: Gender,
         translateEngine :  TranslateEngineType? = null,
-        textSupportedLanguage : SupportedLanguage,
+        textSupportedLanguage : String,
         completion : (Completion<String>) -> Unit,
     )
 ```
@@ -173,7 +188,7 @@ suspend fun startTextToSpeech(
 | Property Name | Type  | Description  |
 | ------- | --- | --- |
 | inputText | String | Input text to translate |
-| textSupportedLanguage | SupportedLanguage | Language name of the input text, Ex: 'English', 'Telugu' |
+| textSupportedLanguage | String | Language name of the input text, Ex: 'English', 'Telugu' |
 | translateEngine | TranlsateEngineType | TRANSLATE_ENGINE_1, TRANSLATE_ENGINE_2, TRANSLATE_ENGINE_3 |
 | gender | Gender | MALE or FEMALE |
 | completion | Completion<T> | The completion result. This is of type Completion, which is a sealed class with two possible types: Success or Error. The Success type holds a result of type T, while the Error type holds an error message as a String. |
