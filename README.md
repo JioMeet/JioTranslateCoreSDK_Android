@@ -13,11 +13,11 @@ JioTranslate is a package that provides functionality for translating text and s
    - [Configure SDK](#configure-jiomeet-core-sdk-inside-your-app)
    - [Add Permissions](#add-permissions-for-network-and-device-access)
    - [Integrate SDK](#integrate-sdk)
-   - [Load Config]
+   - [Load Config](#load-configuration)
    - [Speech to Text Translation](#speech-to-text-translation)
    - [Text to Text Translation](#text-to-text-translation)
    - [Text to Speech Translation](#text-to-speech-translation)
-
+6. [Data classes and enums](#data-classes-and-enums)
 ## Introduction
 
 In this documentation, we'll guide you through the process of installation, Let's get started on your journey to Break Language barriers with translation of any language into your native tongue with JioTranslate CoreSDK!
@@ -134,7 +134,7 @@ Use this function to convert spoken language into written text.
         audioFilePath : String,
         inputLanguage : String,
         translateEngine : TranslateEngineType? = null,
-        completion : (Completion<String>) -> Unit,
+        completion : (Completion<Any>) -> Unit,
     ) 
 ```
 
@@ -144,7 +144,7 @@ Use this function to convert spoken language into written text.
 | audioFilePath | String | Send recorded audio file path (Ex: recorded.wav) |
 | inputLanguage | String | Language name of the recorded audio, Ex: 'English', 'Telugu' |
 | translateEngine | TranlsateEngineType | TRANSLATE_ENGINE_1, TRANSLATE_ENGINE_2, TRANSLATE_ENGINE_3 |
-| completion | Completion<T> | The completion result. This is of type Completion, which is a sealed class with two possible types: Success or Error. The Success type holds a result of type T, while the Error type holds an error message as a String. |
+| completion | Completion<Any> | The Completion class represents the outcome of an operation, encapsulating either a successful result as String or an error of type [JioTranslateApiError](#jiotranslateapierror).
 
 
 ### Text to Text Translation
@@ -157,7 +157,7 @@ Use this function to translate text from one language to another.
         translationLanguage : String,
         translateEngine :  TranslateEngineType? = null,
         isIndirectTranslation : Boolean = false,
-        completion : (Completion<String>) -> Unit,
+        completion : (Completion<Any>) -> Unit,
     ) 
 ```
 
@@ -168,7 +168,7 @@ Use this function to translate text from one language to another.
 | translationLanguage | String | Language name of the output translation text, Ex: 'Hindi', 'Telugu' |
 | translateEngine | TranlsateEngineType | TRANSLATE_ENGINE_1, TRANSLATE_ENGINE_2, TRANSLATE_ENGINE_3  |
 | isIndirectTranslation | Bool | true or false |
-| completion | Completion<T> | The completion result. This is of type Completion, which is a sealed class with two possible types: Success or Error. The Success type holds a result of type T, while the Error type holds an error message as a String. |
+| completion | Completion<Any> | The Completion class represents the outcome of an operation, encapsulating either a successful result of type String or an error of type [JioTranslateApiError](#jiotranslateapierror).
 
 
 ### Text to Speech Translation
@@ -181,7 +181,7 @@ suspend fun startTextToSpeech(
         gender: Gender,
         translateEngine :  TranslateEngineType? = null,
         textSupportedLanguage : String,
-        completion : (Completion<String>) -> Unit,
+        completion : (Completion<Any>) -> Unit,
     )
 ```
 
@@ -191,8 +191,18 @@ suspend fun startTextToSpeech(
 | textSupportedLanguage | String | Language name of the input text, Ex: 'English', 'Telugu' |
 | translateEngine | TranlsateEngineType | TRANSLATE_ENGINE_1, TRANSLATE_ENGINE_2, TRANSLATE_ENGINE_3 |
 | gender | Gender | MALE or FEMALE |
-| completion | Completion<T> | The completion result. This is of type Completion, which is a sealed class with two possible types: Success or Error. The Success type holds a result of type T, while the Error type holds an error message as a String. |
+| completion | Completion<Any> | The Completion class represents the outcome of an operation, encapsulating either a successful result of type String or an error of type [JioTranslateApiError](#jiotranslateapierror).
 
+
+### Data classes and Enums
+
+#### JioTranslateApiError
+`JioTranslateApiError` is a sealed class representing various types of errors that can occur during translation. It has the following subclasses:
+
+     - UnsupportedLanguage: Indicates that the language is not supported for translation.
+     - Unauthorized: Indicates that the user is not authorized to perform the translation.
+     - ServerError: Indicates a server error occurred during translation.
+     - GenericError: Indicates a generic error occurred during translation.
 ## Troubleshooting
 
 Facing any issues while integrating or installing the JioTranslate android CoreSDK kit, please connect with us via real time support present in JioTranslate.AppSupport@jio.com or https://translate.jio/contact-us.html

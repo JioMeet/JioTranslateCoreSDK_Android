@@ -67,5 +67,5 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-    implementation("com.jio.translation:jiomeetcoretranslationsdk:1.2.0")
+    implementation("com.jio.translation:jiomeetcoretranslationsdk:1.3.0")
 }

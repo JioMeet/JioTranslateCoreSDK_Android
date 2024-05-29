@@ -11,6 +11,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.jio.jiotranslate.JioTranslate
 import com.jio.jiotranslate.model.Completion
 import com.jio.jiotranslate.model.Gender
+import com.jio.jiotranslate.model.JioTranslateApiError
 import com.jio.jiotranslate.model.Server
 import com.jio.jiotranslate.model.SupportedLanguage
 import com.jio.jiotranslate.model.TranslateEngineType
@@ -94,10 +95,10 @@ class MainViewModel : ViewModel() {
             ) { result ->
                 when(result){
                     is Completion.Success -> {
-                        _result.value = result.result
+                        _result.value = result.result as String
                     }
                     is Completion.Error -> {
-                        _result.value = result.errorMessage
+                        _result.value = processJioTranslateSDKError(errorType = result.error)
                     }
 
                 }
@@ -122,29 +123,29 @@ class MainViewModel : ViewModel() {
                     is Completion.Success -> {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             AudioPlayerManager.playAudioBytes(
-                                audioBytes = Base64.getDecoder().decode(result.result)  ?: byteArrayOf(),
+                                audioBytes = Base64.getDecoder().decode(result.result as String)  ?: byteArrayOf(),
                                 onStopPlaying = {
                                     updateMediaPlayerState(false)
                                 }
                             )
                             AudioPlayerManager.setProgressListener { currentPosition, duration ->
-                                Log.d("TAG", "synthesisToSpeaker: " + currentPosition + " " + duration )
+                                Log.d("TAG", "synthesisToSpeaker: $currentPosition $duration")
                                 // Update UI or perform any action based on the current playback progress
                             }
                         } else {
                             AudioPlayerManager.playAudioBytes(
-                            audioBytes = android.util.Base64.decode(result.result,0)  ?: byteArrayOf(),
+                            audioBytes = android.util.Base64.decode(result.result as String,0)  ?: byteArrayOf(),
                             onStopPlaying = {
                                 updateMediaPlayerState(false)
                             })
                             AudioPlayerManager.setProgressListener { currentPosition, duration ->
-                                Log.d("TAG", "synthesisToSpeaker: " + currentPosition + " " + duration )
+                                Log.d("TAG", "synthesisToSpeaker: $currentPosition $duration")
                                 // Update UI or perform any action based on the current playback progress
                             }
                         }
                     }
                     is Completion.Error -> {
-                        _result.value = result.errorMessage
+                        _result.value  = processJioTranslateSDKError(result.error)
                     }
 
                 }
@@ -168,16 +169,27 @@ class MainViewModel : ViewModel() {
             ) { result ->
                 when (result) {
                     is Completion.Success -> {
-                        _result.value = result.result
+                        _result.value = result.result as String
                     }
 
                     is Completion.Error -> {
-                        _result.value = result.errorMessage
+                        _result.value = processJioTranslateSDKError(result.error)
                     }
 
                 }
             }
         }
+    }
+
+    private fun processJioTranslateSDKError(errorType : JioTranslateApiError) : String {
+        val errorMessage = when (errorType) {
+            is JioTranslateApiError.UnsupportedLanguage -> errorType.errorMessage
+            is JioTranslateApiError.Unauthorized -> errorType.errorMessage
+            is JioTranslateApiError.ServerError -> errorType.errorMessage
+            is JioTranslateApiError.GenericError -> errorType.errorMessage
+            else -> "Unknown error" // Default message for unknown errors
+        }
+        return errorMessage
     }
 
     fun updateText(text: String) {
