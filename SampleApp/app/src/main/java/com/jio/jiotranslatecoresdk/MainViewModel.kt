@@ -53,7 +53,7 @@ class MainViewModel : ViewModel() {
     fun initJioTranslate(context: Context) {
         val builder = JioTranslate.Builder()
         val accessToken =
-            "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1LTBhYmI5ZjJmLTYzNDctNDRhOS04ZGJkLWI2NDE3OWQzMTYzZSIsInRva2VuSWQiOiJvdC00YWE5OTgxNy05Y2QzLTQ3NDYtYTA1My04N2MzYTRlYWM1ZTgiLCJzb3VyY2UiOiJtb2JpbGUiLCJpYXQiOjE3MTY3OTE5MzUsImV4cCI6MTcxNjg3ODMzNX0.WBb82Sz_wDnL6eRr35MngQyGbw9lGaX0JE23AoueUYde3t22oFWWwLW221muOVdufkJNt3rnznsHyeYoAnpoeeOf663udL6rMl53ItyerO0ZF-nis7eQTiRVjBVTcdNmc06fuuUfijfx3qaNIdtDptZyd0xN1vX380sR-Dtsat0"
+            "QnG9gW7xAW67NC73HWyfydjnbs2zJudeQ3y7asAkZQtfVFy7s8ygC25j2DXX4nkk"
         builder.apply {
             init(context, Server.SIT.baseURL)
             setJwt(accessToken)
@@ -127,12 +127,20 @@ class MainViewModel : ViewModel() {
                                     updateMediaPlayerState(false)
                                 }
                             )
+                            AudioPlayerManager.setProgressListener { currentPosition, duration ->
+                                Log.d("TAG", "synthesisToSpeaker: " + currentPosition + " " + duration )
+                                // Update UI or perform any action based on the current playback progress
+                            }
                         } else {
                             AudioPlayerManager.playAudioBytes(
                             audioBytes = android.util.Base64.decode(result.result,0)  ?: byteArrayOf(),
                             onStopPlaying = {
                                 updateMediaPlayerState(false)
                             })
+                            AudioPlayerManager.setProgressListener { currentPosition, duration ->
+                                Log.d("TAG", "synthesisToSpeaker: " + currentPosition + " " + duration )
+                                // Update UI or perform any action based on the current playback progress
+                            }
                         }
                     }
                     is Completion.Error -> {

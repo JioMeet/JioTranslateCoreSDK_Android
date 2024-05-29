@@ -1,6 +1,7 @@
 package com.jio.jiotranslatecoresdk.util
 
 import android.net.Uri
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -14,7 +15,9 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.jio.jiotranslate.di.JioTranslateKit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 object AudioPlayerManager {
@@ -22,6 +25,36 @@ object AudioPlayerManager {
     private var coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var exoPlayer: ExoPlayer? = null
     private var onStopPlayingCallback: ((Unit) -> Unit)? = null
+
+    private var progressUpdateJob: Job? = null
+    private const val progressUpdateIntervalMillis = 1000L // Update progress every second
+
+    private var onProgressUpdateListener: (Long, Long) -> Unit = { currentPosition, duration ->
+        // Handle progress update here
+        val progressPercentage = (currentPosition.toFloat() / duration.toFloat()) * 100
+        Log.d(TAG, ": $currentPosition ms, Duration: $duration ms, Progress: $progressPercentage%")
+    }
+    // Function to set the progress listener
+    fun setProgressListener(listener: (Long, Long) -> Unit) {
+        onProgressUpdateListener = listener
+        startProgressUpdates()
+    }
+
+    // Function to start the periodic progress updates
+    private fun startProgressUpdates() {
+        progressUpdateJob?.cancel() // Cancel any existing job
+
+        progressUpdateJob = coroutineScope.launch {
+            while (true) {
+                val duration = exoPlayer?.duration ?: C.TIME_UNSET
+                val position = exoPlayer?.currentPosition ?: C.TIME_UNSET
+                if (duration != C.TIME_UNSET && position != C.TIME_UNSET && exoPlayer?.isPlaying == true) {
+                    onProgressUpdateListener.invoke(position, duration)
+                }
+                delay(progressUpdateIntervalMillis)
+            }
+        }
+    }
 
     @OptIn(UnstableApi::class)
     fun playAudioBytes(audioBytes: ByteArray, onStopPlaying: (Unit) -> Unit) {
